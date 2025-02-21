@@ -85,8 +85,8 @@ namespace crc_static
 			{
                 if (crc32(reinterpret_cast<uint8_t*>(addr_mod) + crc_res_table.crc_reg[i].crc_addr_rva, crc_res_table.crc_reg[i].crc_size) != crc_res_table.crc_reg[i].crc_res)
                 {
-                    printf("rva ->\t%p\n", crc_res_table.crc_reg[i].crc_addr_rva);
-                    printf("crc_res ->\t%p\n", crc_res_table.crc_reg[i].crc_res);
+                    //printf("rva ->\t%p\n", crc_res_table.crc_reg[i].crc_addr_rva);
+                    //printf("crc_res ->\t%p\n", crc_res_table.crc_reg[i].crc_res);
 
                     return FALSE;
                 }

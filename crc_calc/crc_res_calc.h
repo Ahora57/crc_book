@@ -10,7 +10,6 @@
 
 namespace crc_res_calc
 {
-	CRC_STATIC_INFO crc_res_table = { 0xDEADC0DE, {0xBEEF,1,0XDEADC0DE} };
 	uint32_t crc32_tab[] =
 	{
 		0x00000000L, 0x77073096L, 0xee0e612cL, 0x990951baL, 0x076dc419L,
@@ -243,7 +242,6 @@ namespace crc_res_calc
 			BOOLEAN ignore_first_sec_byte = FALSE;
 			BOOLEAN any_crc_ignore = FALSE;
 			uint32_t end_reloce = NULL;
-			HMODULE base_imp_dll = NULL;
 
 			CHAR* name_imp_dll = NULL;
 			uint16_t* relative_info = NULL;
@@ -326,28 +324,26 @@ namespace crc_res_calc
 					name_imp_dll = reinterpret_cast<CHAR*>(addr_file) + rva_to_va(imp_descript->Name, nt_headers, sec);
 					if (name_imp_dll)
 					{
-						base_imp_dll = LoadLibraryA(name_imp_dll);
-						if (base_imp_dll)
+
+						orig_first_thunk = reinterpret_cast<uint64_t*>(reinterpret_cast<CHAR*>(addr_file) + rva_to_va(imp_descript->OriginalFirstThunk, nt_headers, sec));
+						first_thunk = reinterpret_cast<uint64_t*>(reinterpret_cast<CHAR*>(addr_file) + rva_to_va(imp_descript->FirstThunk, nt_headers, sec));
+
+						if (!orig_first_thunk) //load by index https://stackoverflow.com/questions/42413937/why-pe-need-original-first-thunkoft
 						{
-							orig_first_thunk = reinterpret_cast<uint64_t*>(reinterpret_cast<CHAR*>(addr_file) + rva_to_va(imp_descript->OriginalFirstThunk, nt_headers, sec));
-							first_thunk = reinterpret_cast<uint64_t*>(reinterpret_cast<CHAR*>(addr_file) + rva_to_va(imp_descript->FirstThunk, nt_headers, sec));
-
-							if (!orig_first_thunk) //load by index https://stackoverflow.com/questions/42413937/why-pe-need-original-first-thunkoft
-							{
-								orig_first_thunk = first_thunk;
-							}
-
-							for (; *orig_first_thunk; orig_first_thunk++, first_thunk++)
-							{
-
-								crc_cur_ignore.size = sizeof(PVOID);
-								crc_cur_ignore.rva = va_to_rva(reinterpret_cast<uint8_t*>(first_thunk) - addr_file, nt_headers, sec);;
-								crc_cur_ignore.va = reinterpret_cast<uint8_t*>(first_thunk) - addr_file;
-
-								crc_ignore.push_back(crc_cur_ignore);
-
-							}
+							orig_first_thunk = first_thunk;
 						}
+
+						for (; *orig_first_thunk; orig_first_thunk++, first_thunk++)
+						{
+
+							crc_cur_ignore.size = sizeof(PVOID);
+							crc_cur_ignore.rva = va_to_rva(reinterpret_cast<uint8_t*>(first_thunk) - addr_file, nt_headers, sec);;
+							crc_cur_ignore.va = reinterpret_cast<uint8_t*>(first_thunk) - addr_file;
+
+							crc_ignore.push_back(crc_cur_ignore);
+
+						}
+
 					}
 				}
 
@@ -533,19 +529,19 @@ namespace crc_res_calc
 			}
 
 
-			printf("crc num ->\t%p\n", crc_res.size());
-
-
-			for (size_t i = NULL; i < crc_res.size(); i++)
-			{
-
-
-				printf("crc rva ->\t%p\n", crc_res[i].crc_addr_rva);
-				printf("crc va ->\t%p\n", nt_headers->OptionalHeader.ImageBase + crc_res[i].crc_addr_rva);
-				printf("crc size ->\t%p\n", crc_res[i].crc_size);
-				printf("crc res ->\t%p\n", crc_res[i].crc_res);
-
-			}
+			//printf("crc num ->\t%p\n", crc_res.size());
+			//
+			//
+			//for (size_t i = NULL; i < crc_res.size(); i++)
+			//{
+			//
+			//
+			//	printf("crc rva ->\t%p\n", crc_res[i].crc_addr_rva);
+			//	printf("crc va ->\t%p\n", nt_headers->OptionalHeader.ImageBase + crc_res[i].crc_addr_rva);
+			//	printf("crc size ->\t%p\n", crc_res[i].crc_size);
+			//	printf("crc res ->\t%p\n", crc_res[i].crc_res);
+			//
+			//}
 
 			//copy size
 			reinterpret_cast<CRC_STATIC_INFO*>(addr_pattern)->crc_num = crc_res.size();
